@@ -3,11 +3,16 @@
 # ------------------------------------------------------
 
 type Booking {
+  createdAt: DateTime!
   endDate: DateTime!
   id: Int!
+  numberOfGuests: Int!
+  room: Room!
+  roomId: Int!
   startDate: DateTime!
   status: Status!
   totalPrice: Float!
+  updatedAt: DateTime!
   user: User!
   userId: Int!
 }
@@ -57,8 +62,24 @@ type Query {
 }
 
 type Room {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  bookings: [Booking!]
+  capacity: Int!
+  createdAt: DateTime!
+  description: String!
+  id: Int!
+  images: [String!]!
+  isAvailable: Boolean!
+  name: String!
+  pricePerNight: Float!
+  roomType: RoomType!
+  updatedAt: DateTime!
+}
+
+enum RoomType {
+  DELUXE
+  PENTHOUSE
+  STANDARD
+  SUITE
 }
 
 enum Status {
@@ -88,18 +109,17 @@ input UpdateUserInput {
 }
 
 type User {
-  age: Float!
-  booking: [Booking!]
+  age: Int
+  bookings: [Booking!]
   createdAt: DateTime!
   email: String!
   firstName: String!
-
-  """Id For the User """
   id: Int!
+  isActive: Boolean!
   lastName: String!
-  password: String!
   phoneNumber: String
   role: UserRole!
+  updatedAt: DateTime!
 }
 
 enum UserRole {

@@ -1,37 +1,41 @@
+import { ObjectType, Field, Float, Int } from '@nestjs/graphql';
 import {
-  ObjectType,
-  Field,
-  Float,
-  Int,
-  registerEnumType,
-} from '@nestjs/graphql';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Status } from '../status.enum';
 import { User } from '../../user/entities/user.entity';
 import { Room } from '../../rooms/entities/room.entity';
 
-registerEnumType(Status, {
-  name: 'Status',
-});
-
 @ObjectType()
-@Entity()
+@Entity('bookings')
+@Index(['roomId', 'startDate', 'endDate']) // 🔥 the most critical index in the whole app
 export class Booking {
-  @Field(() => Int)
   @PrimaryGeneratedColumn()
+  @Field(() => Int)
   id: number;
 
+  @Column({ type: 'date' }) // 🔥 'date' not 'timestamp' — you book nights, not hours
   @Field()
-  @Column()
   startDate: Date;
 
+  @Column({ type: 'date' })
   @Field()
-  @Column()
   endDate: Date;
 
-  @Field(() => Float)
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  totalPrice: number;
+  @Field(() => Float)
+  totalPrice: number; // snapshot of price at time of booking (Room price may change)
+
+  @Column({ type: 'smallint', unsigned: true })
+  @Field(() => Int)
+  numberOfGuests: number; // 🔥 needed for capacity validation
 
   @Column({
     type: 'enum',
@@ -41,23 +45,40 @@ export class Booking {
   @Field(() => Status)
   status: Status;
 
-  //The Object Which is returned
+  // ─── User Relation ───────────────────────────────────────────────────────────
 
-  @ManyToOne(() => User, (user) => user.bookings, { onDelete: 'CASCADE' })
-  @Field(() => User)
-  user: User;
-
-  //The ID
+  @Index() // 🔥 "get all bookings for user X" is a very common query
   @Column()
   @Field(() => Int)
   userId: number;
 
-  //The Object which is returned
-  @ManyToOne(() => Room, (room) => room.booked)
-  @Field(() => Room)
-  room: Room;
+  @ManyToOne(() => User, (user) => user.bookings, {
+    onDelete: 'CASCADE',
+    lazy: true,
+  })
+  @JoinColumn({ name: 'userId' }) // 🔥 explicit JoinColumn keeps the FK name predictable
+  @Field(() => User)
+  user: Promise<User>;
 
-  @Field(() => Int)
+  // ─── Room Relation ────────────────────────────────────────────────────────────
+
   @Column()
+  @Field(() => Int)
   roomId: number;
+
+  @ManyToOne(() => Room, (room) => room.bookings, {
+    onDelete: 'RESTRICT', // 🔥 RESTRICT not CASCADE — don't delete bookings if room deleted
+    lazy: true,
+  })
+  @JoinColumn({ name: 'roomId' })
+  @Field(() => Room)
+  room: Promise<Room>;
+
+  @CreateDateColumn()
+  @Field()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  @Field()
+  updatedAt: Date;
 }

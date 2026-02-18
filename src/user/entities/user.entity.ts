@@ -1,42 +1,44 @@
-import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
-import { IsEmail, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
+import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { UserRole } from '../user.enum';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Booking } from '../../booking/entities/booking.entity';
 
-registerEnumType(UserRole, {
-  name: 'UserRole',
-});
-@Entity()
+@Entity('users')
 @ObjectType()
 export class User {
   @PrimaryGeneratedColumn()
-  @Field(() => Int, { description: 'Id For the User ' })
+  @Field(() => Int)
   id: number;
 
+  @Column({ length: 50 })
   @Field()
-  @IsString()
-  @Column()
   firstName: string;
 
+  @Column({ length: 50 })
   @Field()
-  @IsString()
-  @Column()
   lastName: string;
 
-  @Field()
-  @IsEmail()
+  @Index() // 🔥 speeds up auth lookups dramatically
   @Column({ unique: true })
+  @Field()
   email: string;
 
-  @Column()
+  @Column({ select: false }) // 🔒 never returned in any query by default
   password: string;
+
+  @Column({ nullable: true, select: false }) // 🔒 for JWT refresh token rotation
+  refreshToken?: string;
+
+  @Column({ nullable: true, select: false }) // 🔒 for invalidating tokens after password change
+  passwordChangedAt?: Date;
 
   @Column({
     type: 'enum',
@@ -46,22 +48,27 @@ export class User {
   @Field(() => UserRole)
   role: UserRole;
 
-  @Field()
-  @Column()
-  age: number;
+  @Column({ type: 'smallint', unsigned: true, nullable: true }) // 🔥 smallint saves space vs int
+  @Field(() => Int, { nullable: true })
+  age?: number;
 
-  @Field(() => [Booking], { nullable: true })
-  @OneToMany(() => Booking, (booking) => booking.user)
-  bookings: Booking[];
-
+  @Column({ nullable: true, length: 15 })
   @Field({ nullable: true })
-  @IsString()
-  @IsOptional()
-  @IsPhoneNumber('EG')
-  @Column({ nullable: true })
   phoneNumber?: string;
 
+  @Column({ default: true }) // 🔒 for soft disabling accounts without deletion
   @Field()
+  isActive: boolean;
+
+  @OneToMany(() => Booking, (booking) => booking.user, { lazy: true }) // 🔥 lazy avoids N+1
+  @Field(() => [Booking], { nullable: true })
+  bookings: Promise<Booking[]>; // Promise<> is required for lazy relations in TypeORM
+
   @CreateDateColumn()
+  @Field()
   createdAt: Date;
+
+  @UpdateDateColumn() // 🔥 always know when the record last changed
+  @Field()
+  updatedAt: Date;
 }
