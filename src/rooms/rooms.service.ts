@@ -1,26 +1,25 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Room } from './entities/room.entity';
+import { Repository } from 'typeorm';
 import { CreateRoomInput } from './dto/create-room.input';
-import { UpdateRoomInput } from './dto/update-room.input';
 
 @Injectable()
 export class RoomsService {
-  create(createRoomInput: CreateRoomInput) {
-    return 'This action adds a new room';
+  constructor(@InjectRepository(Room) private roomRepo: Repository<Room>) {}
+
+  async create(createRoomInput: CreateRoomInput): Promise<Room> {
+    const newRoom = this.roomRepo.create(createRoomInput);
+    return await this.roomRepo.save(newRoom);
   }
 
-  findAll() {
-    return `This action returns all rooms`;
+  async findAll(): Promise<Room[]> {
+    return await this.roomRepo.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} room`;
-  }
+  async findOne(id: number): Promise<Room> {
+    const foundRoom = await this.roomRepo.findOne({ where: { id } });
 
-  update(id: number, updateRoomInput: UpdateRoomInput) {
-    return `This action updates a #${id} room`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} room`;
+    return foundRoom;
   }
 }

@@ -18,13 +18,20 @@ type Booking {
 }
 
 input CreateBookingInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  endDate: DateTime!
+  numberOfGuests: Int!
+  roomId: Int!
+  startDate: DateTime!
+  userId: Int!
 }
 
 input CreateRoomInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  capacity: Int!
+  description: String!
+  images: [String!]!
+  name: String!
+  pricePerNight: Float!
+  roomType: RoomType
 }
 
 input CreateUserInput {
@@ -47,10 +54,8 @@ type Mutation {
   createRoom(createRoomInput: CreateRoomInput!): Room!
   createUser(createUserInput: CreateUserInput!): User!
   removeBooking(id: Int!): Booking!
-  removeRoom(id: Int!): Room!
   removeUser(id: Int!): User!
   updateBooking(updateBookingInput: UpdateBookingInput!): Booking!
-  updateRoom(updateRoomInput: UpdateRoomInput!): Room!
   updateUser(updateUserInput: UpdateUserInput!): User!
 }
 
@@ -91,15 +96,12 @@ enum Status {
 }
 
 input UpdateBookingInput {
-  """Example field (placeholder)"""
-  exampleField: Int
+  endDate: DateTime
   id: Int!
-}
-
-input UpdateRoomInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  numberOfGuests: Int
+  roomId: Int
+  startDate: DateTime
+  userId: Int
 }
 
 input UpdateUserInput {

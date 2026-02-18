@@ -6,6 +6,10 @@ import { UserModule } from './user/user.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingModule } from './booking/booking.module';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Room } from './rooms/entities/room.entity';
+import { User } from './user/entities/user.entity';
+import { Booking } from './booking/entities/booking.entity';
 
 @Module({
   imports: [
@@ -21,6 +25,20 @@ import { ConfigModule } from '@nestjs/config';
     UserModule,
     RoomsModule,
     BookingModule,
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      database: process.env.POSTGRES_DB,
+      synchronize: true,
+      logging: false,
+      entities: [User, Room, Booking],
+      autoLoadEntities: true,
+      migrations: [],
+      subscribers: [],
+    }),
   ],
 })
 export class AppModule {}
