@@ -48,9 +48,9 @@ export class User {
   @Field(() => UserRole)
   role: UserRole;
 
-  @Column({ type: 'smallint', unsigned: true, nullable: true }) // 🔥 smallint saves space vs int
-  @Field(() => Int, { nullable: true })
-  age?: number;
+  @Column({ type: 'smallint', unsigned: true, nullable: false }) // 🔥 smallint saves space vs int
+  @Field(() => Int, { nullable: false })
+  age: number;
 
   @Column({ nullable: true, length: 15 })
   @Field({ nullable: true })
