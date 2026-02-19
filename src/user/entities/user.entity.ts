@@ -60,9 +60,9 @@ export class User {
   @Field()
   isActive: boolean;
 
-  @OneToMany(() => Booking, (booking) => booking.user, { lazy: true }) // 🔥 lazy avoids N+1
+  @OneToMany(() => Booking, (booking) => booking.user) // 🔥 lazy avoids N+1
   @Field(() => [Booking], { nullable: true })
-  bookings: Promise<Booking[]>; // Promise<> is required for lazy relations in TypeORM
+  bookings: Booking[]; // Promise<> is required for lazy relations in TypeORM
 
   @CreateDateColumn()
   @Field()

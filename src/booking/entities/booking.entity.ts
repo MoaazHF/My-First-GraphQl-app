@@ -4,7 +4,6 @@ import {
   CreateDateColumn,
   Entity,
   Index,
-  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -12,6 +11,7 @@ import {
 import { Status } from '../status.enum';
 import { User } from '../../user/entities/user.entity';
 import { Room } from '../../rooms/entities/room.entity';
+import { IsOptional } from 'class-validator';
 
 @ObjectType()
 @Entity('bookings')
@@ -48,31 +48,32 @@ export class Booking {
   // ─── User Relation ───────────────────────────────────────────────────────────
 
   @Index() // 🔥 "get all bookings for user X" is a very common query
-  @Column()
+  @Column({ type: 'int' })
   @Field(() => Int)
   userId: number;
 
   @ManyToOne(() => User, (user) => user.bookings, {
     onDelete: 'CASCADE',
-    lazy: true,
   })
-  @JoinColumn({ name: 'userId' }) // 🔥 explicit JoinColumn keeps the FK name predictable
+  @IsOptional()
+  // @JoinColumn({ name: 'userId' }) // 🔥 explicit JoinColumn keeps the FK name predictable
   @Field(() => User)
-  user: Promise<User>;
+  user: User;
 
   // ─── Room Relation ────────────────────────────────────────────────────────────
 
-  @Column()
+  @Column({ type: 'int' })
+  @IsOptional()
   @Field(() => Int)
   roomId: number;
 
   @ManyToOne(() => Room, (room) => room.bookings, {
     onDelete: 'RESTRICT', // 🔥 RESTRICT not CASCADE — don't delete bookings if room deleted
-    lazy: true,
   })
-  @JoinColumn({ name: 'roomId' })
+  @IsOptional()
+  // @JoinColumn({ name: 'roomId' })
   @Field(() => Room)
-  room: Promise<Room>;
+  room: Room;
 
   @CreateDateColumn()
   @Field()

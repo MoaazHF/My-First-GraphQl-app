@@ -53,14 +53,11 @@ type Mutation {
   createBooking(createBookingInput: CreateBookingInput!): Booking!
   createRoom(createRoomInput: CreateRoomInput!): Room!
   createUser(createUserInput: CreateUserInput!): User!
-  removeBooking(id: Int!): Booking!
-  removeUser(id: Int!): User!
-  updateBooking(updateBookingInput: UpdateBookingInput!): Booking!
-  updateUser(updateUserInput: UpdateUserInput!): User!
 }
 
 type Query {
   booking(id: Int!): Booking!
+  bookings: [Booking!]!
   findAll: [User!]!
   room(id: Int!): Room!
   rooms: [Room!]!
@@ -93,26 +90,6 @@ enum Status {
   COMPLETED
   CONFIRMED
   PENDING
-}
-
-input UpdateBookingInput {
-  endDate: DateTime
-  id: Int!
-  numberOfGuests: Int
-  roomId: Int
-  startDate: DateTime
-  userId: Int
-}
-
-input UpdateUserInput {
-  age: Int
-  email: String
-  firstName: String
-  id: Int!
-  lastName: String
-  password: String
-  phoneNumber: String
-  role: UserRole
 }
 
 type User {

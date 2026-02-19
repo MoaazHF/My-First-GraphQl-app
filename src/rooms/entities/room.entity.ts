@@ -50,9 +50,9 @@ export class Room {
   isAvailable: boolean; // 🔥 admin-controlled flag (maintenance, renovation, etc.)
   //    NOT a substitute for booking availability logic
 
-  @OneToMany(() => Booking, (booking) => booking.room, { lazy: true })
+  @OneToMany(() => Booking, (booking) => booking.room)
   @Field(() => [Booking], { nullable: true })
-  bookings: Promise<Booking[]>; // 🗑️ removed booked: boolean[] — this is derived data
+  bookings: Promise<Booking[]>;
 
   @CreateDateColumn()
   @Field()
