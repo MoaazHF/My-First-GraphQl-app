@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { BookingService } from './booking.service';
 import { Booking } from './entities/booking.entity';
 import { CreateBookingInput } from './dto/create-booking.input';
+import { UpdateBookingInput } from './dto/update-booking.input';
 
 @Resolver(() => Booking)
 export class BookingResolver {
@@ -10,17 +11,29 @@ export class BookingResolver {
   @Mutation(() => Booking)
   createBooking(
     @Args('createBookingInput') createBookingInput: CreateBookingInput,
-  ) {
+  ): Promise<Booking> {
     return this.bookingService.create(createBookingInput);
   }
 
   @Query(() => [Booking], { name: 'bookings' })
-  findAll(): Promise<Booking[]> {
+  bookings(): Promise<Booking[]> {
     return this.bookingService.findAll();
   }
 
   @Query(() => Booking, { name: 'booking' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  booking(@Args('id', { type: () => Int }) id: number): Promise<Booking> {
     return this.bookingService.findOne(id);
+  }
+
+  @Mutation(() => Booking)
+  updateBooking(
+    @Args('updateBookingInput') updateBookingInput: UpdateBookingInput,
+  ): Promise<Booking> {
+    return this.bookingService.update(updateBookingInput.id, updateBookingInput);
+  }
+
+  @Mutation(() => Booking)
+  removeBooking(@Args('id', { type: () => Int }) id: number): Promise<Booking> {
+    return this.bookingService.remove(id);
   }
 }

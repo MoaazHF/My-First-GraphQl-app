@@ -1,6 +1,6 @@
 import {
   BadRequestException,
-  // BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +10,8 @@ import { Repository } from 'typeorm';
 import { CreateBookingInput } from './dto/create-booking.input';
 import { Room } from '../rooms/entities/room.entity';
 import { User } from '../user/entities/user.entity';
+import { Status } from './status.enum';
+import { UpdateBookingInput } from './dto/update-booking.input';
 
 @Injectable()
 export class BookingService {
@@ -25,50 +27,160 @@ export class BookingService {
   async create(createBookingInput: CreateBookingInput): Promise<Booking> {
     const { startDate, endDate, roomId, userId, numberOfGuests } =
       createBookingInput;
-    const room = await this.roomRepository.findOne({ where: { id: roomId } });
+    const { room, user, totalPrice } = await this.validateAndPrepareBooking({
+      startDate,
+      endDate,
+      roomId,
+      userId,
+      numberOfGuests,
+    });
 
-    if (!room) {
-      throw new NotFoundException(`The Room With ${roomId} not found`);
-    }
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 1) {
-      throw new BadRequestException('Booking duration must be at least 1 day');
-    }
-
-    const totalPrice = diffDays * room.pricePerNight;
-    console.log('HIiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii13131313131313');
     const newBooking = this.bookingRepository.create({
       startDate,
       endDate,
       numberOfGuests,
       roomId,
       userId,
-      totalPrice: totalPrice,
-      room: room,
-      user: { id: userId } as User,
+      totalPrice,
+      room,
+      user,
     });
 
-    return await this.bookingRepository.save(newBooking);
+    const savedBooking = await this.bookingRepository.save(newBooking);
+    return this.findOne(savedBooking.id);
+  }
+
+  async update(
+    id: number,
+    updateBookingInput: UpdateBookingInput,
+  ): Promise<Booking> {
+    const existingBooking = await this.findOne(id);
+
+    const startDate = updateBookingInput.startDate ?? existingBooking.startDate;
+    const endDate = updateBookingInput.endDate ?? existingBooking.endDate;
+    const roomId = updateBookingInput.roomId ?? existingBooking.roomId;
+    const userId = updateBookingInput.userId ?? existingBooking.userId;
+    const numberOfGuests =
+      updateBookingInput.numberOfGuests ?? existingBooking.numberOfGuests;
+
+    const { room, user, totalPrice } = await this.validateAndPrepareBooking({
+      startDate,
+      endDate,
+      roomId,
+      userId,
+      numberOfGuests,
+      excludeBookingId: id,
+    });
+
+    const updatedBooking = this.bookingRepository.merge(existingBooking, {
+      ...updateBookingInput,
+      startDate,
+      endDate,
+      roomId,
+      userId,
+      numberOfGuests,
+      totalPrice,
+      room,
+      user,
+    });
+
+    await this.bookingRepository.save(updatedBooking);
+    return this.findOne(id);
   }
 
   async findOne(id: number): Promise<Booking> {
     const foundBooking = await this.bookingRepository.findOne({
       where: { id },
+      relations: ['room', 'user'],
     });
     if (!foundBooking) {
       throw new NotFoundException(`Booking ${id} not found`);
     }
-    console.log(foundBooking);
+
     return foundBooking;
   }
 
   async findAll(): Promise<Booking[]> {
-    return this.bookingRepository.find();
+    return await this.bookingRepository.find({
+      relations: ['room', 'user'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async remove(id: number): Promise<Booking> {
+    const booking = await this.findOne(id);
+    await this.bookingRepository.remove(booking);
+    return booking;
+  }
+
+  private async validateAndPrepareBooking(params: {
+    startDate: Date;
+    endDate: Date;
+    roomId: number;
+    userId: number;
+    numberOfGuests: number;
+    excludeBookingId?: number;
+  }): Promise<{ room: Room; user: User; totalPrice: number }> {
+    const { startDate, endDate, roomId, userId, numberOfGuests, excludeBookingId } =
+      params;
+
+    const room = await this.roomRepository.findOne({ where: { id: roomId } });
+    if (!room) {
+      throw new NotFoundException(`The Room With ${roomId} not found`);
+    }
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`The User With ${userId} not found`);
+    }
+    if (!room.isAvailable) {
+      throw new BadRequestException(`Room ${roomId} is currently unavailable`);
+    }
+    if (numberOfGuests > room.capacity) {
+      throw new BadRequestException(
+        `Room ${roomId} can host up to ${room.capacity} guests only`,
+      );
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const startUtc = Date.UTC(
+      start.getUTCFullYear(),
+      start.getUTCMonth(),
+      start.getUTCDate(),
+    );
+    const endUtc = Date.UTC(
+      end.getUTCFullYear(),
+      end.getUTCMonth(),
+      end.getUTCDate(),
+    );
+    const diffTime = endUtc - startUtc;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 1) {
+      throw new BadRequestException('Booking duration must be at least 1 day');
+    }
+
+    const overlapQuery = this.bookingRepository
+      .createQueryBuilder('booking')
+      .where('booking.roomId = :roomId', { roomId })
+      .andWhere('booking.status != :canceled', { canceled: Status.CANCElED })
+      .andWhere('booking.startDate < :endDate', { endDate })
+      .andWhere('booking.endDate > :startDate', { startDate });
+
+    if (excludeBookingId) {
+      overlapQuery.andWhere('booking.id != :excludeBookingId', {
+        excludeBookingId,
+      });
+    }
+
+    const overlapBooking = await overlapQuery.getOne();
+
+    if (overlapBooking) {
+      throw new ConflictException(
+        `Room ${roomId} is already booked for the selected dates`,
+      );
+    }
+
+    return { room, user, totalPrice: diffDays * Number(room.pricePerNight) };
   }
 }

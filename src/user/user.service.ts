@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateUserInput } from './dto/create-user.input';
+import { UpdateUserInput } from './dto/update-user.input';
 
 @Injectable()
 export class UserService {
@@ -22,5 +23,23 @@ export class UserService {
       throw new NotFoundException(`The User With Id: ${id}`);
     }
     return found;
+  }
+
+  async update(id: number, updateUserInput: UpdateUserInput): Promise<User> {
+    await this.findOne(id);
+
+    const updatedUser = this.userRepo.merge(
+      { id } as User,
+      updateUserInput,
+    );
+    await this.userRepo.save(updatedUser);
+
+    return this.findOne(id);
+  }
+
+  async remove(id: number): Promise<User> {
+    const user = await this.findOne(id);
+    await this.userRepo.remove(user);
+    return user;
   }
 }
