@@ -10,6 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Room } from './rooms/entities/room.entity';
 import { User } from './user/entities/user.entity';
 import { Booking } from './booking/entities/booking.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { Booking } from './booking/entities/booking.entity';
       migrations: [],
       subscribers: [],
     }),
+    AuthModule,
   ],
 })
 export class AppModule {}

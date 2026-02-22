@@ -1,6 +1,8 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { UserRole } from '../user.enum';
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   CreateDateColumn,
   Entity,
@@ -10,6 +12,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Booking } from '../../booking/entities/booking.entity';
+import * as argon2 from 'argon2';
+import { Exclude } from 'class-transformer';
+import { IsStrongPassword } from 'class-validator';
 
 @Entity('users')
 @ObjectType()
@@ -26,13 +31,22 @@ export class User {
   @Field()
   lastName: string;
 
-  @Index() // 🔥 speeds up auth lookups dramatically
+  @Index()
   @Column({ unique: true })
   @Field()
   email: string;
 
-  @Column({ select: false }) // 🔒 never returned in any query by default
+  @Column({ select: false })
+  @IsStrongPassword()
   password: string;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  async hashingPassword() {
+    if (this.password && !this.password.startsWith('$argon2')) {
+      this.password = (await argon2.hash(this.password)) as string;
+    }
+  }
 
   @Column({ nullable: true, select: false }) // 🔒 for JWT refresh token rotation
   refreshToken?: string;

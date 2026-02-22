@@ -64,9 +64,10 @@ type Mutation {
 type Query {
   booking(id: Int!): Booking!
   bookings: [Booking!]!
+  login(email: String!, password: String!): User!
   room(id: Int!): Room!
   rooms: [Room!]!
-  user(id: Int!): User!
+  user(email: String!): User!
   users: [User!]!
 }
 

@@ -22,7 +22,18 @@ export class UserResolver {
 
   @Query(() => User, { name: 'user' })
   user(@Args('id', { type: () => Int }) id: number): Promise<User> {
-    return this.userService.findOne(id);
+    return this.userService.findOneById(id);
+  }
+  @Query(() => User, { name: 'user' })
+  userByEmail(@Args('email') email: string): Promise<User> {
+    return this.userService.findOneByEmail(email);
+  }
+  @Query(() => User, { name: 'login' })
+  signIn(
+    @Args('email') email: string,
+    @Args('password') password: string,
+  ): Promise<User> {
+    return this.userService.signIn(email, password);
   }
 
   @Mutation(() => User)
@@ -33,7 +44,7 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  removeUser(@Args('id', { type: () => Int }) id: number): Promise<User> {
+  removeUser(@Args('id', { type: () => Int }) id: number) {
     return this.userService.remove(id);
   }
 }

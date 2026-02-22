@@ -33,7 +33,7 @@ export class RoomsResolver {
   }
 
   @Mutation(() => Room)
-  removeRoom(@Args('id', { type: () => Int }) id: number): Promise<Room> {
+  removeRoom(@Args('id', { type: () => Int }) id: number): Promise<boolean> {
     return this.roomsService.remove(id);
   }
 }
