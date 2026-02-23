@@ -32,7 +32,7 @@ export class UserResolver {
   user(@Args('id', { type: () => Int }) id: number): Promise<User> {
     return this.userService.findOneById(id);
   }
-  @Query(() => User, { name: 'user' })
+  @Query(() => User, { name: 'userByEmail' })
   userByEmail(@Args('email') email: string): Promise<User> {
     return this.userService.findOneByEmail(email);
   }

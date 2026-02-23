@@ -67,7 +67,8 @@ type Query {
   login(email: String!, password: String!): User!
   room(id: Int!): Room!
   rooms: [Room!]!
-  user(email: String!): User!
+  user(id: Int!): User!
+  userByEmail(email: String!): User!
   users: [User!]!
 }
 
