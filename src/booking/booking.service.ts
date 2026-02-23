@@ -107,6 +107,10 @@ export class BookingService {
     });
   }
 
+  async findAllById(id: number): Promise<Booking[]> {
+    return this.bookingRepository.find({ where: { id: id } });
+  }
+
   async remove(id: number): Promise<Booking> {
     const booking = await this.findOne(id);
     await this.bookingRepository.remove(booking);
@@ -121,8 +125,14 @@ export class BookingService {
     numberOfGuests: number;
     excludeBookingId?: number;
   }): Promise<{ room: Room; user: User; totalPrice: number }> {
-    const { startDate, endDate, roomId, userId, numberOfGuests, excludeBookingId } =
-      params;
+    const {
+      startDate,
+      endDate,
+      roomId,
+      userId,
+      numberOfGuests,
+      excludeBookingId,
+    } = params;
 
     const room = await this.roomRepository.findOne({ where: { id: roomId } });
     if (!room) {

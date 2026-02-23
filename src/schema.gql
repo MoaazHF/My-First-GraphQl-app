@@ -132,17 +132,17 @@ input UpdateUserInput {
 
 type User {
   age: Int!
-  bookings: [Booking!]
+  bookings: [Booking!]!
   createdAt: DateTime!
   email: String!
   firstName: String!
+  fullName: String!
   id: Int!
   isActive: Boolean!
   lastName: String!
   phoneNumber: String
   role: UserRole!
   updatedAt: DateTime!
-  users: User!
 }
 
 enum UserRole {

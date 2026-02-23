@@ -8,6 +8,7 @@ import { User } from '../user/entities/user.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Booking, Room, User])],
-  providers: [BookingResolver, BookingService],
+  providers: [BookingResolver, BookingService, Booking],
+  exports: [Booking, BookingService],
 })
 export class BookingModule {}

@@ -11,10 +11,15 @@ import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
+import { Booking } from '../booking/entities/booking.entity';
+import { BookingService } from '../booking/booking.service';
 
 @Resolver(() => User)
 export class UserResolver {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private bookingService: BookingService,
+  ) {}
 
   @Mutation(() => User)
   createUser(
@@ -56,9 +61,13 @@ export class UserResolver {
     return this.userService.remove(id);
   }
 
-  @ResolveField('users', () => User)
-  async getUsers(@Parent() user: User): Promise<User> {
-    const { id } = user;
-    return await this.userService.findOneById(id);
+  @ResolveField('fullName', () => String)
+  getFullName(@Parent() user: User): string {
+    return `${user.firstName} ${user.lastName}`;
+  }
+
+  @ResolveField('bookings', () => [Booking])
+  async getBookings(@Parent() user: User): Promise<Booking[]> {
+    return await this.bookingService.findAllById(user.id);
   }
 }

@@ -31,6 +31,9 @@ export class User {
   @Field()
   lastName: string;
 
+  @Field({ nullable: true })
+  fullName?: string;
+
   @Index()
   @Column({ unique: true })
   @Field()
