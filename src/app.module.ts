@@ -5,12 +5,13 @@ import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingModule } from './booking/booking.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Room } from './rooms/entities/room.entity';
 import { User } from './user/entities/user.entity';
 import { Booking } from './booking/entities/booking.entity';
 import { AuthModule } from './auth/auth.module';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
@@ -26,20 +27,30 @@ import { AuthModule } from './auth/auth.module';
     UserModule,
     RoomsModule,
     BookingModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD,
-      database: process.env.POSTGRES_DB,
-      synchronize: true,
-      logging: false,
-      entities: [User, Room, Booking],
-      autoLoadEntities: true,
-      migrations: [],
-      subscribers: [],
+
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      // Use useFactory, useClass, or useExisting
+      // to configure the DataSourceOptions.
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: +configService.get('DB_PORT'),
+        username: configService.get('POSTGRES_USER'),
+        password: configService.get('POSTGRES_PASSWORD'),
+        database: configService.get('POSTGRES_DB'),
+        entities: [User, Room, Booking],
+        synchronize: true,
+      }),
+      // dataSource receives the configured DataSourceOptions
+      // and returns a Promise<DataSource>.
+      dataSourceFactory: async (options) => {
+        const dataSource = await new DataSource(options).initialize();
+        return dataSource;
+      },
     }),
+
     AuthModule,
   ],
 })

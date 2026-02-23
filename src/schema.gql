@@ -141,6 +141,7 @@ type User {
   phoneNumber: String
   role: UserRole!
   updatedAt: DateTime!
+  users: User!
 }
 
 enum UserRole {
