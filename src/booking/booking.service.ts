@@ -12,6 +12,8 @@ import { Room } from '../rooms/entities/room.entity';
 import { User } from '../user/entities/user.entity';
 import { Status } from './status.enum';
 import { UpdateBookingInput } from './dto/update-booking.input';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class BookingService {
@@ -22,6 +24,7 @@ export class BookingService {
     private roomRepository: Repository<Room>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectQueue('email_queue') private readonly emailQueue: Queue,
   ) {}
 
   async create(createBookingInput: CreateBookingInput): Promise<Booking> {
@@ -47,7 +50,13 @@ export class BookingService {
     });
 
     const savedBooking = await this.bookingRepository.save(newBooking);
-    return this.findOne(savedBooking.id);
+
+    // 2. Queue offloading
+    await this.emailQueue.add('send-confirmation', {
+      bookingId: savedBooking.id, // Replace with your actual variable
+      action: 'dispatch_email',
+    });
+    return savedBooking;
   }
 
   async update(

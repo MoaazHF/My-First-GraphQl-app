@@ -12,9 +12,32 @@ import { User } from './user/entities/user.entity';
 import { Booking } from './booking/entities/booking.entity';
 import { AuthModule } from './auth/auth.module';
 import { DataSource } from 'typeorm';
+import { BullModule } from '@nestjs/bullmq';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
+    // داخل مصفوفة imports:
+    MailerModule.forRoot({
+      transport: {
+        host: 'sandbox.smtp.mailtrap.io',
+        port: 2525,
+        auth: {
+          user: '171c766b2788a3',
+          pass: 'f4720a57d53a1b',
+        },
+      },
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
+          host: await configService.get('REDIS_HOST'),
+          port: +configService.get('REDIS_PORT'),
+        },
+      }),
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
