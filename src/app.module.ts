@@ -2,60 +2,60 @@ import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { DataSource } from 'typeorm';
+
 import { UserModule } from './user/user.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { BookingModule } from './booking/booking.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Room } from './rooms/entities/room.entity';
-import { User } from './user/entities/user.entity';
-import { Booking } from './booking/entities/booking.entity';
 import { AuthModule } from './auth/auth.module';
-import { DataSource } from 'typeorm';
-import { BullModule } from '@nestjs/bullmq';
-import { MailerModule } from '@nestjs-modules/mailer';
+
+import { User } from './user/entities/user.entity';
+import { Room } from './rooms/entities/room.entity';
+import { Booking } from './booking/entities/booking.entity';
 
 @Module({
   imports: [
-    // داخل مصفوفة imports:
-    MailerModule.forRoot({
-      transport: {
-        host: 'sandbox.smtp.mailtrap.io',
-        port: 2525,
-        auth: {
-          user: '171c766b2788a3',
-          pass: 'f4720a57d53a1b',
-        },
-      },
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         connection: {
-          host: await configService.get('REDIS_HOST'),
+          host: configService.get('REDIS_HOST'),
           port: +configService.get('REDIS_PORT'),
         },
       }),
     }),
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        transport: {
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: configService.get<string>('SMTP_USER'),
+            pass: configService.get<string>('SMTP_PASS'),
+          },
+        },
+      }),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       sortSchema: true,
     }),
-    UserModule,
-    RoomsModule,
-    BookingModule,
-
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      // Use useFactory, useClass, or useExisting
-      // to configure the DataSourceOptions.
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.get('DB_HOST'),
@@ -66,14 +66,14 @@ import { MailerModule } from '@nestjs-modules/mailer';
         entities: [User, Room, Booking],
         synchronize: true,
       }),
-      // dataSource receives the configured DataSourceOptions
-      // and returns a Promise<DataSource>.
       dataSourceFactory: async (options) => {
         const dataSource = await new DataSource(options).initialize();
         return dataSource;
       },
     }),
-
+    UserModule,
+    RoomsModule,
+    BookingModule,
     AuthModule,
   ],
 })

@@ -52,10 +52,31 @@ export class BookingService {
     const savedBooking = await this.bookingRepository.save(newBooking);
 
     // 2. Queue offloading
-    await this.emailQueue.add('send-confirmation', {
-      bookingId: savedBooking.id, // Replace with your actual variable
-      action: 'dispatch_email',
-    });
+    await this.emailQueue.add(
+      'send-confirmation',
+      {
+        userFullName: savedBooking.user.firstName,
+        userPhoneNumber: savedBooking.user.phoneNumber,
+        userAge: savedBooking.user.age,
+        startDate: savedBooking.startDate,
+        endDate: savedBooking.endDate,
+        bookingId: savedBooking.id,
+        roomDescription: savedBooking.room.description,
+        roomName: savedBooking.room.name,
+        roomPricePerNight: savedBooking.room.pricePerNight,
+        roomRoomType: savedBooking.room.roomType,
+
+        action: 'dispatch_email',
+      },
+      {
+        attempts: 3,
+        backoff: 5000,
+        removeOnComplete: true,
+        removeOnFail: {
+          count: 50,
+        },
+      },
+    );
     return savedBooking;
   }
 
