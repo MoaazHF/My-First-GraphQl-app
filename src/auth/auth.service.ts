@@ -15,7 +15,6 @@ export class AuthService {
 
   async signIn(email: string, pass: string): Promise<AuthResponse> {
     const user = await this.usersService.signIn(email, pass);
-    console.log(user);
     return this.login({ id: user.id, email: user.email });
   }
 

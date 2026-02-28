@@ -41,13 +41,6 @@ export class UserResolver {
   userByEmail(@Args('email') email: string): Promise<User> {
     return this.userService.findOneByEmail(email);
   }
-  @Query(() => User, { name: 'login' })
-  signIn(
-    @Args('email') email: string,
-    @Args('password') password: string,
-  ): Promise<User> {
-    return this.userService.signIn(email, password);
-  }
 
   @Mutation(() => User)
   updateUser(
