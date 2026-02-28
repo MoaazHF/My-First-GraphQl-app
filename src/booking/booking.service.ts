@@ -14,6 +14,7 @@ import { Status } from './status.enum';
 import { UpdateBookingInput } from './dto/update-booking.input';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { BookingConfirmationEmailJob } from './types/booking-confirmation-email-job.type';
 
 @Injectable()
 export class BookingService {
@@ -24,7 +25,8 @@ export class BookingService {
     private roomRepository: Repository<Room>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @InjectQueue('email_queue') private readonly emailQueue: Queue,
+    @InjectQueue('email_queue')
+    private readonly emailQueue: Queue<BookingConfirmationEmailJob>,
   ) {}
 
   async create(createBookingInput: CreateBookingInput): Promise<Booking> {
@@ -55,7 +57,9 @@ export class BookingService {
     await this.emailQueue.add(
       'send-confirmation',
       {
-        userFullName: savedBooking.user.firstName,
+        userFullName:
+          `${savedBooking.user.firstName} ${savedBooking.user.lastName}`.trim(),
+        recipientEmail: savedBooking.user.email,
         userPhoneNumber: savedBooking.user.phoneNumber,
         userAge: savedBooking.user.age,
         startDate: savedBooking.startDate,
@@ -63,6 +67,7 @@ export class BookingService {
         bookingId: savedBooking.id,
         roomDescription: savedBooking.room.description,
         roomName: savedBooking.room.name,
+        totalPrice: savedBooking.totalPrice,
         roomPricePerNight: savedBooking.room.pricePerNight,
         roomRoomType: savedBooking.room.roomType,
 
@@ -138,7 +143,11 @@ export class BookingService {
   }
 
   async findAllById(id: number): Promise<Booking[]> {
-    return this.bookingRepository.find({ where: { id: id } });
+    return this.bookingRepository.find({
+      where: { userId: id },
+      relations: ['room', 'user'],
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async remove(id: number): Promise<Booking> {
