@@ -49,6 +49,15 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type LoginResponse {
+  access_token: String!
+}
+
 type Mutation {
   createBooking(createBookingInput: CreateBookingInput!): Booking!
   createRoom(createRoomInput: CreateRoomInput!): Room!
@@ -56,6 +65,7 @@ type Mutation {
   removeBooking(id: Int!): Booking!
   removeRoom(id: Int!): Room!
   removeUser(id: Int!): User!
+  signIn(loginInput: LoginInput!): LoginResponse!
   updateBooking(updateBookingInput: UpdateBookingInput!): Booking!
   updateRoom(updateRoomInput: UpdateRoomInput!): Room!
   updateUser(updateUserInput: UpdateUserInput!): User!

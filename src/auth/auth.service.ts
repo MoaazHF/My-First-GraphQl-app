@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
+
 export interface AuthResponse {
   access_token: string;
 }
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -13,10 +15,13 @@ export class AuthService {
 
   async signIn(email: string, pass: string): Promise<AuthResponse> {
     const user = await this.usersService.signIn(email, pass);
+    console.log(user);
+    return this.login({ id: user.id, email: user.email });
+  }
+
+  async login(user: { id: number; email: string }): Promise<AuthResponse> {
     const payload = { sub: user.id, email: user.email };
     return {
-      // 💡 Here the JWT secret key that's used for signing the payload
-      // is the key that was passsed in the JwtModule
       access_token: await this.jwtService.signAsync(payload),
     };
   }

@@ -1,7 +1,7 @@
 import {
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -9,7 +9,6 @@ import { Repository } from 'typeorm';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import * as argon2 from 'argon2';
-import { AuthenticationError } from '@nestjs/apollo';
 
 @Injectable()
 export class UserService {
@@ -21,27 +20,21 @@ export class UserService {
   }
 
   async signIn(email: string, pass: string): Promise<User> {
-    try {
-      const user = await this.userRepo.findOne({
-        where: { email: email },
-        select: ['id', 'password', 'email', 'firstName', 'lastName', 'role'],
-      });
-      console.log(`password of found:${user.password}`);
+    const user = await this.userRepo.findOne({
+      where: { email },
+      select: ['id', 'password', 'email', 'firstName', 'lastName', 'role'],
+    });
 
-      if (!user) {
-        throw new NotFoundException(`the user with email:${email} Not Found`);
-      }
-      console.log('AFTER User');
-
-      const found = await argon2.verify(user.password, pass);
-      if (!found) {
-        throw new AuthenticationError(`Entered Wrong Credentials :`);
-      }
-      console.log('You have logged in successfully.');
-      return user;
-    } catch (err) {
-      throw new InternalServerErrorException(`The Error :${err}`);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
     }
+
+    const isPasswordValid = await argon2.verify(user.password, pass);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    return user;
   }
 
   async findAll(): Promise<User[]> {

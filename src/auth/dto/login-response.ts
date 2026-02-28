@@ -1,15 +1,7 @@
-import { Field, Int, ObjectType } from '@nestjs/graphql';
-import { IsNumber } from 'class-validator';
+import { Field, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()
-export class Author {
-  @Field(() => Int)
-  @IsNumber()
-  id: number;
-
-  @Field({ nullable: false })
-  firstName?: string;
-
-  @Field({ nullable: false })
-  lastName?: string;
+export class LoginResponse {
+  @Field()
+  access_token: string;
 }
