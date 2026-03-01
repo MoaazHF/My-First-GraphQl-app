@@ -1,13 +1,31 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  Int,
+  Subscription,
+} from '@nestjs/graphql';
 import { BookingService } from './booking.service';
 import { Booking } from './entities/booking.entity';
 import { CreateBookingInput } from './dto/create-booking.input';
 import { UpdateBookingInput } from './dto/update-booking.input';
+import { PubSub } from 'graphql-subscriptions';
+import { Inject } from '@nestjs/common';
 
 @Resolver(() => Booking)
 export class BookingResolver {
-  constructor(private readonly bookingService: BookingService) {}
+  constructor(
+    private readonly bookingService: BookingService,
+    @Inject('PUB_SUB') private pubSub: PubSub,
+  ) {}
 
+  @Subscription(() => Booking, {
+    name: 'bookingStatusUpdated',
+  })
+  subscribeToBookingStatus() {
+    return this.pubSub.asyncIterableIterator('bookingStatusUpdated');
+  }
   @Mutation(() => Booking)
   createBooking(
     @Args('createBookingInput') createBookingInput: CreateBookingInput,
@@ -29,7 +47,10 @@ export class BookingResolver {
   updateBooking(
     @Args('updateBookingInput') updateBookingInput: UpdateBookingInput,
   ): Promise<Booking> {
-    return this.bookingService.update(updateBookingInput.id, updateBookingInput);
+    return this.bookingService.update(
+      updateBookingInput.id,
+      updateBookingInput,
+    );
   }
 
   @Mutation(() => Booking)

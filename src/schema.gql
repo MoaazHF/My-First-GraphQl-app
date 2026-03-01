@@ -110,12 +110,17 @@ enum Status {
   PENDING
 }
 
+type Subscription {
+  bookingStatusUpdated: Booking!
+}
+
 input UpdateBookingInput {
   endDate: DateTime
   id: Int!
   numberOfGuests: Int
   roomId: Int
   startDate: DateTime
+  status: Status
   userId: Int
 }
 

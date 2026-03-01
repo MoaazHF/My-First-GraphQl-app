@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { UpdateBookingInput } from './dto/update-booking.input';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { BookingConfirmationEmailJob } from './types/booking-confirmation-email-job.type';
+import { PubSub } from 'graphql-subscriptions';
 
 @Injectable()
 export class BookingService {
@@ -27,6 +29,7 @@ export class BookingService {
     private userRepository: Repository<User>,
     @InjectQueue('email_queue')
     private readonly emailQueue: Queue<BookingConfirmationEmailJob>,
+    @Inject('PUB_SUB') private pubSub: PubSub,
   ) {}
 
   async create(createBookingInput: CreateBookingInput): Promise<Booking> {
@@ -90,6 +93,7 @@ export class BookingService {
     updateBookingInput: UpdateBookingInput,
   ): Promise<Booking> {
     const existingBooking = await this.findOne(id);
+    const previousStatus = existingBooking.status;
 
     const startDate = updateBookingInput.startDate ?? existingBooking.startDate;
     const endDate = updateBookingInput.endDate ?? existingBooking.endDate;
@@ -120,7 +124,16 @@ export class BookingService {
     });
 
     await this.bookingRepository.save(updatedBooking);
-    return this.findOne(id);
+    const finalizedBooking = await this.findOne(id);
+
+    // State transition interception
+    if (previousStatus !== finalizedBooking.status) {
+      await this.pubSub.publish('bookingStatusUpdated', {
+        bookingStatusUpdated: finalizedBooking,
+      });
+    }
+
+    return finalizedBooking;
   }
 
   async findOne(id: number): Promise<Booking> {
