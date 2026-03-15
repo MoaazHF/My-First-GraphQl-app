@@ -47,7 +47,7 @@ export class User {
   @BeforeUpdate()
   async hashingPassword() {
     if (this.password && !this.password.startsWith('$argon2')) {
-      this.password = (await argon2.hash(this.password)) as string;
+      this.password = await argon2.hash(this.password);
     }
   }
 
